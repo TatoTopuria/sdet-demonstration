@@ -1,0 +1,6 @@
+{
+  "allure": {
+    "title": "AutomationExercise Test Suite",
+    "resultDirectory": "allure-results"
+  }
+}

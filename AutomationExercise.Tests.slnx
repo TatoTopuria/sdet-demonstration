@@ -1,0 +1,5 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/AutomationExercise.Tests/AutomationExercise.Tests.csproj" />
+  </Folder>
+</Solution>

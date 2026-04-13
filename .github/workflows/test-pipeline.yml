@@ -1,0 +1,245 @@
+name: Test Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+  schedule:
+    - cron: "0 1 * * *"
+  workflow_dispatch:
+    inputs:
+      category:
+        description: "Test category to run"
+        required: false
+        default: "all"
+        type: choice
+        options:
+          - all
+          - API
+          - UI
+          - E2E
+      environment:
+        description: "Target environment"
+        required: false
+        default: "Development"
+        type: string
+
+env:
+  DOTNET_VERSION: "8.0.x"
+  PROJECT_PATH: "src/AutomationExercise.Tests"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+
+  api-tests:
+    needs: build
+    runs-on: ubuntu-latest
+    if: >
+      github.event.inputs.category == 'API' ||
+      github.event.inputs.category == 'all' ||
+      github.event.inputs.category == ''   ||
+      github.event_name != 'workflow_dispatch'
+    env:
+      ENVIRONMENT: ${{ github.event.inputs.environment || 'Development' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Run API tests
+        run: >
+          dotnet test
+          --filter "TestCategory=API"
+          --configuration Release
+          --no-restore
+          --logger "trx;LogFileName=api-results.trx"
+          --results-directory TestResults/API
+          --
+          NUnit.NumberOfTestWorkers=4
+
+      - name: Upload API test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: api-test-results
+          path: TestResults/API
+          retention-days: 30
+
+      - name: Upload Allure results (API)
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: allure-results-api
+          path: allure-results/
+          retention-days: 30
+
+  ui-tests:
+    needs: build
+    runs-on: ubuntu-latest
+    if: >
+      github.event.inputs.category == 'UI' ||
+      github.event.inputs.category == 'all' ||
+      github.event.inputs.category == ''   ||
+      github.event_name != 'workflow_dispatch'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Install Playwright browsers
+        run: pwsh ${{ env.PROJECT_PATH }}/bin/Release/net8.0/playwright.ps1 install --with-deps chromium firefox
+
+      - name: Run UI tests (Chromium)
+        env:
+          BROWSER_TYPE: Chromium
+        run: >
+          dotnet test
+          --filter "TestCategory=UI"
+          --configuration Release
+          --no-restore
+          --logger "trx;LogFileName=ui-chromium-results.trx"
+          --results-directory TestResults/UI
+          --
+          NUnit.NumberOfTestWorkers=2
+
+      - name: Run UI tests (Firefox)
+        env:
+          BROWSER_TYPE: Firefox
+        run: >
+          dotnet test
+          --filter "TestCategory=UI"
+          --configuration Release
+          --no-restore
+          --logger "trx;LogFileName=ui-firefox-results.trx"
+          --results-directory TestResults/UI-Firefox
+          --
+          NUnit.NumberOfTestWorkers=2
+
+      - name: Upload UI test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ui-test-results
+          path: |
+            TestResults/
+            test-results/
+          retention-days: 30
+
+      - name: Upload Allure results (UI)
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: allure-results-ui
+          path: allure-results/
+          retention-days: 30
+
+  e2e-tests:
+    needs: [api-tests, ui-tests]
+    runs-on: ubuntu-latest
+    if: >
+      always() && (
+        github.event.inputs.category == 'E2E' ||
+        github.event.inputs.category == 'all' ||
+        github.event.inputs.category == ''   ||
+        github.event_name != 'workflow_dispatch'
+      )
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Install Playwright browsers
+        run: pwsh ${{ env.PROJECT_PATH }}/bin/Release/net8.0/playwright.ps1 install --with-deps chromium
+
+      - name: Run E2E tests
+        run: >
+          dotnet test
+          --filter "TestCategory=E2E"
+          --configuration Release
+          --no-restore
+          --logger "trx;LogFileName=e2e-results.trx"
+          --results-directory TestResults/E2E
+
+      - name: Upload E2E test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-test-results
+          path: TestResults/E2E
+          retention-days: 30
+
+  report:
+    needs: [api-tests, ui-tests, e2e-tests]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download all Allure results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: allure-results-*
+          path: allure-results/
+          merge-multiple: true
+
+      - name: Generate Allure report
+        uses: simple-elf/allure-report-action@master
+        with:
+          allure_results: allure-results
+          allure_report: allure-report
+          allure_history: allure-history
+
+      - name: Deploy report to GitHub Pages
+        if: github.ref == 'refs/heads/main'
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: allure-report
