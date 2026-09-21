@@ -34,7 +34,7 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -52,7 +52,7 @@ jobs:
 
   api-tests:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     if: >
       github.event.inputs.category == 'API' ||
       github.event.inputs.category == 'all' ||
@@ -101,7 +101,7 @@ jobs:
 
   ui-tests:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     if: >
       github.event.inputs.category == 'UI' ||
       github.event.inputs.category == 'all' ||
@@ -171,7 +171,7 @@ jobs:
 
   e2e-tests:
     needs: [api-tests, ui-tests]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     if: >
       always() && (
         github.event.inputs.category == 'E2E' ||
@@ -216,7 +216,9 @@ jobs:
 
   report:
     needs: [api-tests, ui-tests, e2e-tests]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
     if: always()
     steps:
       - name: Checkout
