@@ -72,7 +72,7 @@ public sealed class RegisterPage : BasePage
         {
             if (Page.Url.Contains("google_vignette") || Page.Url.Contains("/account_created"))
             {
-                await Page.GotoAsync("https://automationexercise.com/");
+                await Page.GotoAsync("https://www.automationexercise.com/");
             }
         }
     }
