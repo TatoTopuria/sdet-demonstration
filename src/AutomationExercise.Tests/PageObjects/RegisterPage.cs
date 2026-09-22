@@ -64,7 +64,7 @@ public sealed class RegisterPage : BasePage
     public async Task ContinueAsync()
     {
         await ClickAsync(ContinueBtn);
-        await Page.WaitForLoadStateAsync(Microsoft.Playwright.LoadState.NetworkIdle);
+        await Page.WaitForLoadStateAsync(Microsoft.Playwright.LoadState.DOMContentLoaded);
     }
 
     public async Task<bool> IsAccountCreatedAsync()

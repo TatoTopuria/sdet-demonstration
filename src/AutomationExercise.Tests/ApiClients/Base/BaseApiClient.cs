@@ -20,7 +20,8 @@ public abstract class BaseApiClient
 
         var options = new RestClientOptions(appSettings.Value.ApiBaseUrl)
         {
-            Timeout = TimeSpan.FromSeconds(apiSettings.Value.TimeoutSeconds)
+            Timeout = TimeSpan.FromSeconds(apiSettings.Value.TimeoutSeconds),
+            UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
         };
 
         Client = new RestClient(options);
