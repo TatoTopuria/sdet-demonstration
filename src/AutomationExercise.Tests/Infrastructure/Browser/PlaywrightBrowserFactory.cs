@@ -55,6 +55,11 @@ public sealed class PlaywrightBrowserFactory : IBrowserFactory
 
     public async Task<IPage> CreatePageAsync(IBrowserContext context)
     {
-        return await context.NewPageAsync();
+        var page = await context.NewPageAsync();
+        await page.RouteAsync("**/*googlesyndication*", async route => await route.AbortAsync());
+        await page.RouteAsync("**/*googleads*", async route => await route.AbortAsync());
+        await page.RouteAsync("**/*doubleclick*", async route => await route.AbortAsync());
+        await page.RouteAsync("**/*adservice.google*", async route => await route.AbortAsync());
+        return page;
     }
 }

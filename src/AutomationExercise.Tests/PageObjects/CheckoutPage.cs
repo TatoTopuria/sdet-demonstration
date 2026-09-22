@@ -28,6 +28,21 @@ public sealed class CheckoutPage : BasePage
     {
         await FillAsync(CommentBox, comment);
         await ClickAsync(PlaceOrderButton);
+        try
+        {
+            await Page.WaitForURLAsync("**/payment**", new() { Timeout = 10000 });
+        }
+        catch
+        {
+            if (Page.Url.Contains("google_vignette"))
+            {
+                await Page.GotoAsync("https://automationexercise.com/payment");
+            }
+            else if (!Page.Url.Contains("/payment"))
+            {
+                await Page.Locator(PlaceOrderButton).ClickAsync();
+            }
+        }
     }
 
     public async Task FillPaymentDetailsAsync(OrderModel order)
