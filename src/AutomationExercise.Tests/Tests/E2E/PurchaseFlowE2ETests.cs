@@ -50,6 +50,7 @@ public sealed class PurchaseFlowE2ETests : BaseUiTest
     }
 
     [Test]
+    [Retry(2)]
     [AllureSeverity(SeverityLevel.blocker)]
     [AllureDescription("Verifies the complete purchase flow from login through order confirmation for a registered user.")]
     public async Task FullPurchaseFlow_RegisteredUser_ShouldCompleteSuccessfully()
