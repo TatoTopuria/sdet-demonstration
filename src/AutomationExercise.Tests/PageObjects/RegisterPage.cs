@@ -64,7 +64,17 @@ public sealed class RegisterPage : BasePage
     public async Task ContinueAsync()
     {
         await ClickAsync(ContinueBtn);
-        await Page.WaitForLoadStateAsync(Microsoft.Playwright.LoadState.DOMContentLoaded);
+        try
+        {
+            await Page.WaitForURLAsync(url => !url.Contains("/account_created") && !url.Contains("google_vignette"), new() { Timeout = 5000 });
+        }
+        catch
+        {
+            if (Page.Url.Contains("google_vignette") || Page.Url.Contains("/account_created"))
+            {
+                await Page.GotoAsync("https://automationexercise.com/");
+            }
+        }
     }
 
     public async Task<bool> IsAccountCreatedAsync()

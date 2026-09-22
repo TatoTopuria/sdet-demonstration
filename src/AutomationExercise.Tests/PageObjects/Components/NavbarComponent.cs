@@ -26,6 +26,10 @@ public sealed class NavbarComponent : BasePage, IPageComponent
     {
         try
         {
+            if (Page.Url.Contains("google_vignette") || Page.Url.Contains("/account_created"))
+            {
+                await Page.GotoAsync("https://automationexercise.com/");
+            }
             await L(LoggedInUser).WaitForAsync(new LocatorWaitForOptions { Timeout = 8000 });
             return true;
         }
